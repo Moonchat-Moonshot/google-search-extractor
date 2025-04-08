@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Search Results Extractor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+            background-color: #f8f9fa;
+        }
+        .header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .search-form {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        .results-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        .result-item {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-title {
+            font-weight: 600;
+            color: #1a0dab;
+            margin-bottom: 0.25rem;
+        }
+        .result-link {
+            color: #006621;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+        .loading {
+            text-align: center;
+            margin: 2rem 0;
+            display: none;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        .advanced-options {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #dee2e6;
+        }
+        .export-options {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #dee2e6;
+        }
+        .export-btn {
+            margin-right: 0.5rem;
+        }
+        .export-loading {
+            margin-top: 1rem;
+            display: none;
+        }
+        .download-links {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #e9f7ef;
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Google Search Results Extractor</h1>
+            <p class="lead">Extract Google search results with customizable options</p>
+        </div>
+        
+        <div class="search-form">
+            <form id="searchForm">
+                <div class="mb-3">
+                    <label for="keyword" class="form-label">Search Keyword</label>
+                    <input type="text" class="form-control" id="keyword" name="keyword" placeholder="e.g., best running shoes 2025" required>
+                </div>
+                
+                <div class="advanced-options">
+                    <h5>Advanced Options</h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="num_results" class="form-label">Number of Results</label>
+                            <select class="form-select" id="num_results" name="num_results">
+                                <option value="5">5 results</option>
+                                <option value="10" selected>10 results</option>
+                                <option value="15">15 results</option>
+                                <option value="20">20 results</option>
+                                <option value="30">30 results</option>
+                                <option value="50">50 results</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="device" class="form-label">Device Type</label>
+                            <select class="form-select" id="device" name="device">
+                                <option value="desktop" selected>Desktop</option>
+                                <option value="mobile">Mobile</option>
+                                <option value="tablet">Tablet</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="country" class="form-label">Country</label>
+                            <select class="form-select" id="country" name="country">
+                                <option value="us" selected>United States</option>
+                                <option value="uk">United Kingdom</option>
+                                <option value="ca">Canada</option>
+                                <option value="au">Australia</option>
+                                <option value="de">Germany</option>
+                                <option value="fr">France</option>
+                                <option value="jp">Japan</option>
+                                <option value="in">India</option>
+                                <option value="br">Brazil</option>
+                                <option value="mx">Mexico</option>
+                                <option value="es">Spain</option>
+                                <option value="it">Italy</option>
+                                <option value="nl">Netherlands</option>
+                                <option value="ru">Russia</option>
+                                <option value="cn">China</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100 mt-3">Extract Search Results</button>
+            </form>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Fetching search results...</p>
+        </div>
+        
+        <div class="results-container" id="resultsContainer" style="display: none;">
+            <h2 id="resultsHeader">Search Results</h2>
+            <div id="searchParams" class="mb-3 text-muted"></div>
+            <div id="resultsList"></div>
+            
+            <div class="export-options">
+                <h5>Export Options</h5>
+                <div class="d-flex">
+                    <button id="exportToCsv" class="btn btn-success export-btn">Export to CSV</button>
+                    <button id="exportToJson" class="btn btn-info export-btn">Export to JSON</button>
+                </div>
+                
+                <div id="exportLoading" class="export-loading">
+                    <div class="spinner-border spinner-border-sm text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span class="ms-2">Preparing export file...</span>
+                </div>
+                
+                <div id="downloadLinks" class="download-links">
+                    <p><strong>Export successful!</strong></p>
+                    <p>Download your results: <a id="downloadUrl" href="#" target="_blank"></a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentResults = null;
+        let currentKeyword = '';
+        let currentNumResults = '';
+        let currentDevice = '';
+        let currentCountry = '';
+        
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const keyword = document.getElementById('keyword').value.trim();
+            if (!keyword) return;
+            
+            const numResults = document.getElementById('num_results').value;
+            const device = document.getElementById('device').value;
+            const country = document.getElementById('country').value;
+            
+            // Reset export section
+            document.getElementById('downloadLinks').style.display = 'none';
+            
+            // Show loading indicator
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultsContainer').style.display = 'none';
+            
+            // Send search request
+            fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'keyword': keyword,
+                    'num_results': numResults,
+                    'device': device,
+                    'country': country
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading indicator
+                document.getElementById('loading').style.display = 'none';
+                
+                // Store current search parameters
+                currentResults = data.results;
+                currentKeyword = keyword;
+                currentNumResults = numResults;
+                currentDevice = device;
+                currentCountry = country;
+                
+                // Update results header
+                document.getElementById('resultsHeader').textContent = `Search Results for: "${keyword}"`;
+                
+                // Update search parameters display
+                const deviceNames = {
+                    'desktop': 'Desktop',
+                    'mobile': 'Mobile',
+                    'tablet': 'Tablet'
+                };
+                
+                const countryNames = {
+                    'us': 'United States',
+                    'uk': 'United Kingdom',
+                    'ca': 'Canada',
+                    'au': 'Australia',
+                    'de': 'Germany',
+                    'fr': 'France',
+                    'jp': 'Japan',
+                    'in': 'India',
+                    'br': 'Brazil',
+                    'mx': 'Mexico',
+                    'es': 'Spain',
+                    'it': 'Italy',
+                    'nl': 'Netherlands',
+                    'ru': 'Russia',
+                    'cn': 'China'
+                };
+                
+                document.getElementById('searchParams').textContent = 
+                    `Showing ${numResults} results for ${deviceNames[device]} view in ${countryNames[country]}`;
+                
+                // Clear previous results
+                const resultsList = document.getElementById('resultsList');
+                resultsList.innerHTML = '';
+                
+                // Display results
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach(result => {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'result-item';
+                        
+                        const position = document.createElement('div');
+                        position.className = 'result-position';
+                        position.textContent = `${result.position}.`;
+                        
+                        const title = document.createElement('div');
+                        title.className = 'result-title';
+                        title.textContent = `"${result.title}"`;
+                        
+                        const link = document.createElement('div');
+                        link.className = 'result-link';
+                        link.textContent = result.link;
+                        
+                        resultItem.appendChild(position);
+                        resultItem.appendChild(title);
+                        resultItem.appendChild(link);
+                        resultsList.appendChild(resultItem);
+                    });
+                } else {
+                    resultsList.innerHTML = '<p>No results found.</p>';
+                }
+                
+                // Show results container
+                document.getElementById('resultsContainer').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('loading').style.display = 'none';
+                alert('An error occurred while fetching search results. Please try again.');
+            });
+        });
+        
+        // Export to CSV functionality
+        document.getElementById('exportToCsv').addEventListener('click', function() {
+            exportResults('csv');
+        });
+        
+        // Export to JSON functionality
+        document.getElementById('exportToJson').addEventListener('click', function() {
+            exportResults('json');
+        });
+        
+        function exportResults(format) {
+            if (!currentResults || currentResults.length === 0) {
+                alert('No results to export. Please perform a search first.');
+                return;
+            }
+            
+            // Show export loading indicator
+            document.getElementById('exportLoading').style.display = 'block';
+            document.getElementById('downloadLinks').style.display = 'none';
+            
+            // Send export request
+            fetch(`/export-to-${format}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    'results': currentResults,
+                    'keyword': currentKeyword,
+                    'num_results': currentNumResults,
+                    'device': currentDevice,
+                    'country': currentCountry
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide export loading indicator
+                document.getElementById('exportLoading').style.display = 'none';
+                
+                if (data.file_url) {
+                    // Show download link
+                    document.getElementById('downloadUrl').href = data.file_url;
+                    document.getElementById('downloadUrl').textContent = data.file_name;
+                    document.getElementById('downloadLinks').style.display = 'block';
+                    
+                    // Automatically start download
+                    window.location.href = data.file_url;
+                } else {
+                    alert(`Failed to create ${format.toUpperCase()} file. Please try again.`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('exportLoading').style.display = 'none';
+                alert(`An error occurred while creating the ${format.toUpperCase()} file. Please try again.`);
+            });
+        }
+    </script>
+</body>
+</html>
